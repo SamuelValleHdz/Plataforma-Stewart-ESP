@@ -27,6 +27,14 @@
 #define PWM_DUTY_RES LEDC_TIMER_8_BIT // Resolución del ciclo de trabajo (duty cycle) de 8 bits (0-255)
 #define PWM_FREQUENCY 1000         // Frecuencia del PWM en Hz
 
+// Configuración del controlador PID
+#define PID_KP 2.5f                // Ganancia proporcional (ajustar según respuesta deseada)
+#define PID_KI 0.1f                // Ganancia integral (elimina error en estado estacionario)
+#define PID_KD 0.05f               // Ganancia derivativa (reduce oscilaciones)
+#define PID_MAX_OUTPUT 255         // Salida máxima del PID (corresponde al PWM máximo)
+#define PID_MIN_OUTPUT -255        // Salida mínima del PID
+#define PID_MAX_INTEGRAL 100.0f    // Límite para evitar windup del término integral
+
 // Variables globales volátiles para el control del sistema
 
 // 'volatile' indica que la variable puede cambiar en cualquier momento por una interrupción
@@ -34,9 +42,94 @@ static volatile int32_t encoder_count = 0;      // Contador para los pulsos del 
 static float target_angle = 0;                  // Ángulo objetivo al que debe moverse el motor
 static bool position_control_active = false;    // Bandera para indicar si el control de posición está activo
 
+// Variables del controlador PID
+typedef struct {
+    float kp, ki, kd;                    // Ganancias del PID
+    float previous_error;                // Error anterior para calcular la derivada
+    float integral;                      // Acumulador del término integral
+    float max_output, min_output;        // Límites de salida
+    float max_integral;                  // Límite del término integral
+    int64_t last_time;                   // Tiempo de la última ejecución (en microsegundos)
+} pid_controller_t;
+
+static pid_controller_t pid_controller;
+
 // ---
 
 // Funciones del Sistema
+
+// Inicializar el controlador PID
+void pid_init(pid_controller_t *pid, float kp, float ki, float kd, float max_out, float min_out, float max_int) {
+    pid->kp = kp;
+    pid->ki = ki;
+    pid->kd = kd;
+    pid->previous_error = 0.0f;
+    pid->integral = 0.0f;
+    pid->max_output = max_out;
+    pid->min_output = min_out;
+    pid->max_integral = max_int;
+    pid->last_time = esp_timer_get_time();
+}
+
+// Calcular la salida del controlador PID
+float pid_compute(pid_controller_t *pid, float setpoint, float measured_value) {
+    int64_t current_time = esp_timer_get_time();
+    float dt = (current_time - pid->last_time) / 1000000.0f; // Convertir a segundos
+    
+    if (dt <= 0.0f) {
+        return 0.0f; // Evitar división por cero
+    }
+    
+    // Calcular el error
+    float error = setpoint - measured_value;
+    
+    // Término proporcional
+    float proportional = pid->kp * error;
+    
+    // Término integral (con límites para evitar windup)
+    pid->integral += error * dt;
+    if (pid->integral > pid->max_integral) {
+        pid->integral = pid->max_integral;
+    } else if (pid->integral < -pid->max_integral) {
+        pid->integral = -pid->max_integral;
+    }
+    float integral = pid->ki * pid->integral;
+    
+    // Término derivativo
+    float derivative = pid->kd * (error - pid->previous_error) / dt;
+    
+    // Salida total del PID
+    float output = proportional + integral + derivative;
+    
+    // Limitar la salida
+    if (output > pid->max_output) {
+        output = pid->max_output;
+    } else if (output < pid->min_output) {
+        output = pid->min_output;
+    }
+    
+    // Actualizar variables para la siguiente iteración
+    pid->previous_error = error;
+    pid->last_time = current_time;
+    
+    // Debug opcional - solo mostrar cada cierto tiempo para reducir spam
+    static int pid_debug_counter = 0;
+    pid_debug_counter++;
+    if (pid_debug_counter >= 20) {  // Mostrar cada 20 ejecuciones (cada 200ms aprox)
+        printf("PID Debug - Error: %.2f, P: %.2f, I: %.2f, D: %.2f, Output: %.2f\n", 
+               error, proportional, integral, derivative, output);
+        pid_debug_counter = 0;
+    }
+    
+    return output;
+}
+
+// Resetear el controlador PID (útil cuando se cambia el setpoint)
+void pid_reset(pid_controller_t *pid) {
+    pid->previous_error = 0.0f;
+    pid->integral = 0.0f;
+    pid->last_time = esp_timer_get_time();
+}
 
 // Manejador de interrupciones del encoder
 
@@ -109,61 +202,62 @@ void set_motor_speed(int speed) {
 
 // Inicia el proceso de movimiento a un ángulo específico
 void move_to_position(float angle) {
-    target_angle += angle;              // Almacena el ángulo objetivo
+    target_angle += angle;              // Actualiza el ángulo objetivo
     position_control_active = true;    // Activa la bandera para que la tarea de control se ejecute
+    pid_reset(&pid_controller);        // Resetea el PID para evitar valores residuales
+    printf("Nuevo objetivo: %.2f grados\n", target_angle);
 }
 
-// Tarea del FreeRTOS para el control de posición
+// Función para detener el control de posición manualmente
+void stop_position_control() {
+    position_control_active = false;
+    set_motor_speed(0);
+    printf("Control de posicion detenido manualmente\n");
+}
+
+// Tarea del FreeRTOS para el control de posición con PID
 void position_control_task(void *arg) {
     while (1) {
         // Solo ejecuta el control si está activo
         if (position_control_active) {
             float current_angle = get_current_angle();          // Obtiene el ángulo actual
-            float error = target_angle - (current_angle*(-1));   // Calcula el error (distancia al objetivo)
+            float corrected_angle = current_angle; //* (-1);       // Corrige la dirección si es necesario
+            float error = target_angle - corrected_angle;       // Calcula el error
+
+            // Control PID continuo - solo reporta cuando llega cerca del objetivo
+            if (fabs(error) < 1.0f && !position_control_active) {
+                printf("Posicion alcanzada: %.2f grados (objetivo: %.2f)\n", corrected_angle, target_angle);
+                position_control_active = true; // Mantener el control activo para correcciones
+            }
             
-
-            // Si el error es menor a 1 grado, el motor ha llegado a su destino
-            if (fabs(error) < 1.0) {
-                set_motor_speed(0);                     // Detiene el motor
-                position_control_active = false;        // Desactiva el control de posición
-                printf("Posicion alcanzada: %.2f grados\n", current_angle);
-            } else {
-                // Si el error es grande, calcula la velocidad a aplicar
-                int speed;
-
-                // Lógica de control proporcional simple: a mayor error, mayor velocidad
-                if (fabs(error) > 50) {
-                    speed = 100; // Velocidad alta para errores grandes
-                } else if (fabs(error) > 40) {
-                    speed = 80;
-                } else if (fabs(error) > 30) {
-                    speed = 60;
-                } else if (fabs(error) > 15) {
-                    speed = 30;
-                } else if (fabs(error) > 5) {
-                    speed = 10;
-                } else {
-                    speed = 5;   // Velocidad muy baja para errores pequeños (evita oscilaciones)
-                }
+            // Siempre ejecutar el PID mientras el control esté activo
+            {
+                // Usar el controlador PID para calcular la velocidad
+                float pid_output = pid_compute(&pid_controller, target_angle, corrected_angle);
                 
-                printf("\n\nData: \nObjetivo: %.2f, \nPosicion Actual: %.2f\n", target_angle, current_angle);
-                // Si el error es mayor a una vuelta completa, detiene el motor
+                // Convertir la salida del PID a velocidad del motor
+                int motor_speed = (int)pid_output;
+                
+                // Si el error es mayor a una vuelta completa, detiene el motor (medida de seguridad)
                 if (fabs(error) > 360) {
                     set_motor_speed(0);
-                    speed = 0; 
                     position_control_active = false;
-                }
-                // Determina la dirección del movimiento
-                if (error > 0) {
-                    set_motor_speed(speed);   // Mueve hacia adelante
+                    printf("Error demasiado grande (%.2f grados), deteniendo motor\n", error);
                 } else {
-                    set_motor_speed(-speed);  // Mueve en reversa
+                    set_motor_speed(motor_speed);
                 }
                 
-                printf("Error: %.2f,\nVelocidad: %d\n", error, error > 0 ? speed : -speed);
+                // Solo mostrar debug cada 10 iteraciones para reducir spam
+                static int debug_counter = 0;
+                debug_counter++;
+                if (debug_counter >= 10 || fabs(error) < 2.0f) {
+                    printf("\nControl PID:\nObjetivo: %.2f°, Actual: %.2f°, Error: %.2f°, Velocidad: %d\n", 
+                           target_angle, corrected_angle, error, motor_speed);
+                    debug_counter = 0;
+                }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(10)); // Espera 10ms antes de la siguiente iteración
+        vTaskDelay(pdMS_TO_TICKS(10)); // Espera 10ms antes de la siguiente iteración (100Hz de control)
     }
 }
 
@@ -235,16 +329,21 @@ esp_err_t configuracion() {
 void app_main(void) {
     configuracion(); // Llama a la función de configuración del hardware
     
+    // Inicializar el controlador PID
+    pid_init(&pid_controller, PID_KP, PID_KI, PID_KD, PID_MAX_OUTPUT, PID_MIN_OUTPUT, PID_MAX_INTEGRAL);
+    
     // Crear las tareas del sistema operativo (FreeRTOS)
     // Se les asigna una prioridad y un núcleo de procesador
     xTaskCreatePinnedToCore(encoder_angle_task, "Get angle", 2048, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(position_control_task, "Position control", 2048, NULL, 2, NULL, 1);
     
-    // Espera 3 segundos y luego inicia el movimiento
+    // Espera 1 segundo y luego inicia los movimientos de prueba
     vTaskDelay(pdMS_TO_TICKS(1000));
     move_to_position(90.0); // Mueve el motor a 90 grados
-    vTaskDelay(pdMS_TO_TICKS(800));
-    move_to_position(-90.0); // Mueve el motor a 90 grados
-    vTaskDelay(pdMS_TO_TICKS(800));
-    move_to_position(90.0); // Mueve el motor a 90 grados
+    vTaskDelay(pdMS_TO_TICKS(800)); // Espera 5 segundos para que el PID se estabilice y corrija
+    move_to_position(-90.0); // Mueve el motor -90 grados (relativo)
+    vTaskDelay(pdMS_TO_TICKS(800)); // Espera 5 segundos
+    move_to_position(90.0); // Mueve el motor 90 grados (relativo)
+    vTaskDelay(pdMS_TO_TICKS(100)); // Espera final
+    stop_position_control(); // Detener el control al final de la prueba
 }
