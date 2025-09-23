@@ -114,7 +114,7 @@ void move_to_position(float angle) {
 }
 
 // Tarea del FreeRTOS para el control de posición
-void void *arg) {
+void position_control_task(void *arg) {
     while (1) {
         // Solo ejecuta el control si está activo
         if (position_control_active) {
