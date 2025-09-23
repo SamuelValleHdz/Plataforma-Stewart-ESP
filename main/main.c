@@ -109,17 +109,17 @@ void set_motor_speed(int speed) {
 
 // Inicia el proceso de movimiento a un ángulo específico
 void move_to_position(float angle) {
-    target_angle = angle;              // Almacena el ángulo objetivo
+    target_angle += angle;              // Almacena el ángulo objetivo
     position_control_active = true;    // Activa la bandera para que la tarea de control se ejecute
 }
 
 // Tarea del FreeRTOS para el control de posición
-void position_control_task(void *arg) {
+void void *arg) {
     while (1) {
         // Solo ejecuta el control si está activo
         if (position_control_active) {
             float current_angle = get_current_angle();          // Obtiene el ángulo actual
-            float error = target_angle - fabs(current_angle);   // Calcula el error (distancia al objetivo)
+            float error = target_angle - (current_angle*(-1));   // Calcula el error (distancia al objetivo)
             
 
             // Si el error es menor a 1 grado, el motor ha llegado a su destino
@@ -141,7 +141,7 @@ void position_control_task(void *arg) {
                 } else if (fabs(error) > 15) {
                     speed = 30;
                 } else if (fabs(error) > 5) {
-                    speed = 20;
+                    speed = 10;
                 } else {
                     speed = 5;   // Velocidad muy baja para errores pequeños (evita oscilaciones)
                 }
@@ -241,6 +241,10 @@ void app_main(void) {
     xTaskCreatePinnedToCore(position_control_task, "Position control", 2048, NULL, 2, NULL, 1);
     
     // Espera 3 segundos y luego inicia el movimiento
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    move_to_position(90.0); // Mueve el motor a 90 grados
+    vTaskDelay(pdMS_TO_TICKS(800));
+    move_to_position(-90.0); // Mueve el motor a 90 grados
+    vTaskDelay(pdMS_TO_TICKS(800));
     move_to_position(90.0); // Mueve el motor a 90 grados
 }
