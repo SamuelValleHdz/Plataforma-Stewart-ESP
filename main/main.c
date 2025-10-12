@@ -16,30 +16,52 @@ void print_angles_task(void *arg) {
 }
 
 void app_main(void) {
-    // 1. Inicializa todo el sistema de motores con una sola llamada
+    // 1. Inicializa todo el sistema de motores
     motor_control_init();
     
-    // 2. Crea tarea de monitoreo que imprime ángulos periódicamente
+    // 2. Crea una tarea para monitorear los ángulos
     xTaskCreatePinnedToCore(print_angles_task, "Print Angles", 2048, NULL, 2, NULL, 1);
     
     printf("App Main: Iniciando secuencia de movimiento...\n");
     vTaskDelay(pdMS_TO_TICKS(100));
     
-    // 3. Controla los motores usando la API simple y clara
-    // Mover los 3 motores simultáneamente
-    motor_move_relative(MOTOR_0, 90.0);    // Mover motor 0 90 grados
-    motor_move_relative(MOTOR_1, -180.0);  // Mover motor 1 media vuelta en reversa
-    motor_move_relative(MOTOR_2, 90.0);    // Mover motor 2 a 90 grados
-    vTaskDelay(pdMS_TO_TICKS(800));        // Esperar a que terminen
+    // 3. Bucle para repetir la secuencia 5 veces
+    for (int i = 0; i < 5; i++) {
+        printf("========== Iniciando Ciclo %d de 5 ==========\n", i + 1);
+        
+        // Mueve cada motor 30° secuencialmente con una pausa de 800 ms
+        printf("Moviendo motor 0...\n");
+        motor_move_relative(MOTOR_0, 30.0);
+        vTaskDelay(pdMS_TO_TICKS(800));
+        
+        printf("Moviendo motor 1...\n");
+        motor_move_relative(MOTOR_1, 30.0);
+        vTaskDelay(pdMS_TO_TICKS(800));
+        
+        printf("Moviendo motor 2...\n");
+        motor_move_relative(MOTOR_2, 30.0);
+        vTaskDelay(pdMS_TO_TICKS(800));
+        
+        // Pausa opcional antes de regresar
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        
+        // Regresar a la posición inicial de la misma forma secuencial
+        printf("Regresando a la posición inicial...\n");
+        
+        motor_move_relative(MOTOR_2, -30.0);
+        vTaskDelay(pdMS_TO_TICKS(800));
+        
+        motor_move_relative(MOTOR_1, -30.0);
+        vTaskDelay(pdMS_TO_TICKS(800));
+        
+        motor_move_relative(MOTOR_0, -30.0);
+        vTaskDelay(pdMS_TO_TICKS(800));
+
+        printf("========== Ciclo %d Finalizado ==========\n\n", i + 1);
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Espera 1 segundo antes de empezar el siguiente ciclo
+    }
     
-    // Moverlos de vuelta a su posición original
-    printf("App Main: Regresando a la posición inicial...\n");
-    motor_move_relative(MOTOR_0, -90.0);
-    motor_move_relative(MOTOR_1, 180.0);
-    motor_move_relative(MOTOR_2, -90.0);
-    vTaskDelay(pdMS_TO_TICKS(800));
-    
-    // Detener explícitamente los motores al finalizar
+    // Detener explícitamente los motores al finalizar todos los ciclos
     motor_stop(MOTOR_0);
     motor_stop(MOTOR_1);
     motor_stop(MOTOR_2);
