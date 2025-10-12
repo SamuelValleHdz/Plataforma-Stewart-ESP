@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 Motor Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Control de Motores</h1>
+
+        <div class="control-panel">
+            <button id="pid-toggle-btn" class="collapsible-trigger">Ajustes PID ⚙️</button>
+            <div id="pid-settings-panel" class="pid-settings">
+                <div class="param-group">
+                    <label for="pid-kp">KP:</label>
+                    <input type="number" id="pid-kp" step="0.1" value="2.5">
+                </div>
+                <div class="param-group">
+                    <label for="pid-ki">KI:</label>
+                    <input type="number" id="pid-ki" step="0.1" value="0.1">
+                </div>
+                <div class="param-group">
+                    <label for="pid-kd">KD:</label>
+                    <input type="number" id="pid-kd" step="0.01" value="0.05">
+                </div>
+
+                <div class="param-group">
+                    <label for="pid-limit-percent">Límite Salida: <b id="limit-value-display">50</b>%</label>
+                    <input type="range" id="pid-limit-percent" min="25" max="75" step="10" value="50"
+                        oninput="document.getElementById('limit-value-display').innerText = this.value;">
+                </div>
+
+                <button id="save-pid-btn" onclick="savePIDSettings()">Guardar Cambios</button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <h2>Comandos Generales</h2>
+            <button onclick="runDemo()">Ejecutar Demo</button>
+        </div>
+
+        <div class="control-panel">
+            <h2>Calibraci&oacute;n Individual</h2>
+            <button onclick="sendCommand('/calibrate', 'motor=0')">Calibrar Motor 0</button>
+            <button onclick="sendCommand('/calibrate', 'motor=1')">Calibrar Motor 1</button>
+            <button onclick="sendCommand('/calibrate', 'motor=2')">Calibrar Motor 2</button>
+        </div>
+
+        <div class="control-panel movimiento">
+            <label for="motor-select">Motor:</label>
+            <select id="motor-select">
+                <option value="0">Motor 0</option>
+                <option value="1">Motor 1</option>
+                <option value="2">Motor 2</option>
+            </select>
+
+            <label for="angle-select">Ángulo (°):</label>
+            <select id="angle-select"></select>
+
+            <label for="velocity-select">Velocidad:</label>
+            <select id="velocity-select"></select>
+
+            <button onclick="moveMotor()">Mover Motor</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Llenar las listas desplegables al cargar la página ---
+        window.onload = function () {
+            const angleSelect = document.getElementById('angle-select');
+            for (let i = 0; i <= 360; i += 20) {
+                angleSelect.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+
+            const velocitySelect = document.getElementById('velocity-select');
+            for (let i = 25; i <= 75; i += 10) {
+                velocitySelect.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+        };
+
+        // --- Lógica para el menú desplegable PID ---
+        const pidToggleButton = document.getElementById('pid-toggle-btn');
+        const pidSettingsPanel = document.getElementById('pid-settings-panel');
+
+        pidToggleButton.addEventListener('click', () => {
+            if (pidSettingsPanel.style.maxHeight) {
+                pidSettingsPanel.style.maxHeight = null; // Cierra el menú
+            } else {
+                pidSettingsPanel.style.maxHeight = pidSettingsPanel.scrollHeight + "px"; // Abre el menú
+            }
+        });
+
+        // --- Función genérica para enviar comandos ---
+        function sendCommand(endpoint, body) {
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            }).then(res => {
+                if (res.ok) alert('Comando enviado!');
+                else alert('Error al enviar comando.');
+            }).catch(error => alert('Error de conexión.'));
+        }
+
+        // --- Funciones específicas para cada botón ---
+        function runDemo() { sendCommand('/demo', ''); }
+
+        function moveMotor() {
+            const motor = document.getElementById('motor-select').value;
+            const angle = document.getElementById('angle-select').value;
+            const velocity = document.getElementById('velocity-select').value;
+            const body = `motor=${motor}&angle=${angle}&velocity=${velocity}`;
+            sendCommand('/move_relative', body);
+        }
+
+        function savePIDSettings() {
+            // Lee los valores de las ganancias (sin cambios)
+            const kp = document.getElementById('pid-kp').value;
+            const ki = document.getElementById('pid-ki').value;
+            const kd = document.getElementById('pid-kd').value;
+
+            // ✅ Lee el valor del NUEVO slider
+            const limitPercent = document.getElementById('pid-limit-percent').value;
+
+            // ✅ Construye el cuerpo de la petición con el parámetro 'limit_percent'
+            const body = `kp=${kp}&ki=${ki}&kd=${kd}&limit_percent=${limitPercent}`;
+
+            // Muestra en la consola del navegador lo que se va a enviar (muy útil para depurar)
+            console.log("Enviando al robot:", body);
+
+            // Esta función la tienes tú, es la que envía el comando al microcontrolador
+            sendCommand('/set_pid', body);
+        }
+    </script>
+</body>
+
+</html>

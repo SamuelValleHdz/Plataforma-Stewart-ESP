@@ -1,2 +1,12 @@
-idf_component_register(SRCS "main.c"
+idf_component_register(SRCS "main.c" "web_server.c" "wifi_ap.c" "motor_control.c"
                     INCLUDE_DIRS ".")
+
+target_add_binary_data(
+    ${COMPONENT_TARGET}
+    "web/index.html" TEXT
+)
+
+target_add_binary_data(
+    ${COMPONENT_TARGET}
+    "web/style.css" TEXT
+)
