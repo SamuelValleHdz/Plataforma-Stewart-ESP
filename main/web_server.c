@@ -77,19 +77,27 @@ static esp_err_t set_pid_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-
 // --- Manejadores para comandos de motor (SIN CAMBIOS) ---
 
 static esp_err_t calibrate_handler(httpd_req_t *req) {
     char buf[50];
-    if (httpd_req_recv(req, buf, req->content_len) <= 0) return ESP_FAIL;
-    
+    // 1. Leer el cuerpo (body) de la petición POST.
+    if (httpd_req_recv(req, buf, req->content_len) <= 0) {
+        return ESP_FAIL;
+    }
+    // Asegurarse de que el string termina en nulo
+    buf[req->content_len] = '\0';
+
     char motor_str[5];
+
+    // 2. Buscar el parámetro 'motor' en el buffer que contiene los datos del cuerpo.
     if (httpd_query_key_value(buf, "motor", motor_str, sizeof(motor_str)) == ESP_OK) {
-        calibrate(atoi(motor_str));
+        ESP_LOGI(TAG, "Calibrando motor: %s", motor_str);
+        calibrate(atoi(motor_str)); // atoi convierte el texto "1" al número 1
         httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
     } else {
-        httpd_resp_send_500(req);
+        ESP_LOGE(TAG, "Parámetro 'motor' no encontrado en el cuerpo de la petición.");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Parámetro 'motor' no encontrado");
     }
     return ESP_OK;
 }

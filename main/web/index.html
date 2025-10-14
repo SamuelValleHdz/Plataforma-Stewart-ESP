@@ -61,9 +61,6 @@
             <label for="angle-select">Ángulo (°):</label>
             <select id="angle-select"></select>
 
-            <label for="velocity-select">Velocidad:</label>
-            <select id="velocity-select"></select>
-
             <button onclick="moveMotor()">Mover Motor</button>
         </div>
     </div>
@@ -72,13 +69,8 @@
         // --- Llenar las listas desplegables al cargar la página ---
         window.onload = function () {
             const angleSelect = document.getElementById('angle-select');
-            for (let i = 0; i <= 360; i += 20) {
+            for (let i = -180; i <= 180; i += 15) {
                 angleSelect.innerHTML += `<option value="${i}">${i}</option>`;
-            }
-
-            const velocitySelect = document.getElementById('velocity-select');
-            for (let i = 25; i <= 75; i += 10) {
-                velocitySelect.innerHTML += `<option value="${i}">${i}</option>`;
             }
         };
 
@@ -112,8 +104,7 @@
         function moveMotor() {
             const motor = document.getElementById('motor-select').value;
             const angle = document.getElementById('angle-select').value;
-            const velocity = document.getElementById('velocity-select').value;
-            const body = `motor=${motor}&angle=${angle}&velocity=${velocity}`;
+            const body = `motor=${motor}&angle=${angle}`;
             sendCommand('/move_relative', body);
         }
 

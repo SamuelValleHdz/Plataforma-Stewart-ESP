@@ -83,6 +83,40 @@ static void pid_reset(pid_controller_t *pid) {
     pid->last_time = esp_timer_get_time();
 }
 
+
+/**
+ * @brief Actualiza todos los parámetros del controlador PID.
+ */
+// En motor_control.c
+
+void update_all_pid_parameters(float kp, float ki, float kd, int limit_percent)
+{
+    // Validar el límite para que esté entre 0 y 100
+    if (limit_percent < 0) limit_percent = 0;
+    if (limit_percent > 100) limit_percent = 100;
+
+    // Calcular el nuevo límite de salida basado en la resolución del PWM (0-255 para 8 bits)
+    float max_output = (limit_percent / 100.0f) * 255.0f;
+
+    // --- ¡ESTA ES LA PARTE CLAVE! ---
+    // Bucle para actualizar los parámetros DENTRO de la estructura que el controlador realmente usa.
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        motors[i].pid.kp = kp;
+        motors[i].pid.ki = ki;
+        motors[i].pid.kd = kd;
+        motors[i].pid.max_output = max_output;
+        motors[i].pid.min_output = -max_output;
+        
+        // Es buena práctica resetear el estado del PID para una transición suave
+        pid_reset(&motors[i].pid);
+    }
+    
+    // Mensaje de confirmación
+    printf("\n[PID CONTROL] Parámetros actualizados en el controlador:\n");
+    printf("           ├─ Ganancias: KP=%.2f, KI=%.2f, KD=%.2f\n", kp, ki, kd);
+    printf("           └─ Límite de salida: %d%% (MAX: %.0f)\n", limit_percent, max_output);
+}
+
 // ISR que se ejecuta en cada flanco del encoder para contar pulsos y determinar dirección
 static void IRAM_ATTR encoder_isr_handler(void* arg) {
     motor_id_t motor_index = (motor_id_t)(intptr_t)arg;
@@ -148,14 +182,14 @@ static void position_control_task(void *arg) {
 float motor_get_current_angle(motor_id_t motor_id) {
     if (motor_id >= NUM_MOTORS) return 0.0f;
     // Factor 4 por decodificación en cuadratura (4 estados por pulso)
-    float revolutions = (float)motors[motor_id].encoder_count / (4.0f * ENCODER_CPR * GEARBOX_RATIO);
+    float revolutions = (float)motors[motor_id].encoder_count / (2.0f * ENCODER_CPR * GEARBOX_RATIO);
     return revolutions * 360.0f; // Convertir revoluciones a grados
 }
 
 // Mueve el motor un ángulo relativo desde su posición actual
 void motor_move_relative(motor_id_t motor_id, float angle_change) {
     if (motor_id >= NUM_MOTORS) return;
-    motors[motor_id].target_angle += angle_change;
+    motors[motor_id].target_angle = angle_change;
     motors[motor_id].position_control_active = true;
     pid_reset(&motors[motor_id].pid);
     printf("Motor %d - Nuevo objetivo: %.2f grados (relativo: %.2f)\n", motor_id, motors[motor_id].target_angle, angle_change);
