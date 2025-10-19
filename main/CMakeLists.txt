@@ -1,4 +1,4 @@
-idf_component_register(SRCS "main.c" "web_server.c" "wifi_ap.c" "motor_control.c"
+idf_component_register(SRCS "tcp_server.c" "main.c" "web_server.c" "wifi_ap.c" "motor_control.c"
                     INCLUDE_DIRS ".")
 
 target_add_binary_data(

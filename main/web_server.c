@@ -102,6 +102,31 @@ static esp_err_t calibrate_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+// En web_server.c, junto a los otros manejadores...
+
+// --- NUEVO: Manejador para recibir los ángulos calculados por el PC ---
+static esp_err_t set_angles_handler(httpd_req_t *req) {
+    char buf[100];
+    // Recibir el cuerpo (body) de la petición POST
+    if (httpd_req_recv(req, buf, req->content_len) <= 0) {
+        return ESP_FAIL;
+    }
+    buf[req->content_len] = '\0'; // Terminar el string
+
+    // Parsear los tres ángulos del string (ej: "angle_a=95.5&angle_b=88.2&angle_c=91.0")
+    float angle_a, angle_b, angle_c;
+    if (sscanf(buf, "angle_a=%f&angle_b=%f&angle_c=%f", &angle_a, &angle_b, &angle_c) == 3) {
+        // Llamar a una función en motor_control para mover los motores
+        set_all_motors_to_angles(angle_a, angle_b, angle_c);
+        httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
+    } else {
+        ESP_LOGE(TAG, "Error al parsear datos de angulos: %s", buf);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Datos mal formados");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
 static esp_err_t demo_handler(httpd_req_t *req) {
     demo();
     httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
@@ -159,6 +184,9 @@ httpd_handle_t start_webserver(void) { // <-- Modificado para devolver el handle
     // <-- NUEVO: URI para el comando de PID
     const httpd_uri_t set_pid_uri = { .uri = "/set_pid", .method = HTTP_POST, .handler = set_pid_handler };
     httpd_register_uri_handler(server, &set_pid_uri);
+
+    const httpd_uri_t set_angles_uri = { .uri = "/set_angles", .method = HTTP_POST, .handler = set_angles_handler };
+    httpd_register_uri_handler(server, &set_angles_uri);
 
     return server; // <-- Devuelve el handle del servidor
 }

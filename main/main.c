@@ -13,6 +13,7 @@
 #include "wifi_ap.h"
 #include "web_server.h"
 #include "motor_control.h"
+#include "tcp_server.h"
 
 static const char *TAG = "app_main";
 
@@ -94,6 +95,21 @@ void calibrate(int motor_n)
         // Usamos ESP_LOGE para errores del sistema que no deberían ocurrir
         ESP_LOGE(TAG, "Se intentó calibrar un motor no válido (%d).", motor_n);
     }
+}
+
+void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c) {
+    // Esta función recibe los ángulos absolutos y los aplica.
+    // **NOTA IMPORTANTE:** Tu función se llama `motor_move_relative`.
+    // Si realmente mueve el motor una cantidad 'relativa', esta lógica es incorrecta.
+    // Sin embargo, para un robot balancín, casi siempre se necesita mover a un
+    // ángulo ABSOLUTO. Asumimos que `motor_move_relative` en realidad establece
+    // una posición absoluta.
+    
+    ESP_LOGI("MOTOR_CONTROL", "Moviendo a -> A:%.1f, B:%.1f, C:%.1f", angle_a, angle_b, angle_c);
+
+    motor_move_relative(MOTOR_0, angle_a);
+    motor_move_relative(MOTOR_1, angle_b);
+    motor_move_relative(MOTOR_2, angle_c);
 }
 
 /**
@@ -197,6 +213,15 @@ void app_main(void)
         2,
         NULL,
         1
+    );
+    xTaskCreatePinnedToCore(
+        tcp_server_task,
+        "TCP Server",
+        4096, // Dale un poco más de memoria para tareas de red
+        NULL,
+        5,    // Prioridad
+        NULL,
+        1     // Fíjalo al núcleo 1
     );
 }
 

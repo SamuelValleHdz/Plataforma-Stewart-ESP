@@ -8,25 +8,25 @@
 // =================================================================
 
 // Motor 0 - Definición de pines para PWM, dirección y encoder
-#define MOTOR0_PWM_PIN GPIO_NUM_5
-#define MOTOR0_IN1_PIN GPIO_NUM_18
-#define MOTOR0_IN2_PIN GPIO_NUM_19
-#define ENCODER0_A_PIN GPIO_NUM_27
-#define ENCODER0_B_PIN GPIO_NUM_14
+#define MOTOR0_PWM_PIN GPIO_NUM_23
+#define MOTOR0_IN1_PIN GPIO_NUM_22
+#define MOTOR0_IN2_PIN GPIO_NUM_21
+#define ENCODER0_A_PIN GPIO_NUM_34
+#define ENCODER0_B_PIN GPIO_NUM_35
 
 // Motor 1 - Definición de pines para PWM, dirección y encoder
-#define MOTOR1_PWM_PIN GPIO_NUM_21
-#define MOTOR1_IN1_PIN GPIO_NUM_22
-#define MOTOR1_IN2_PIN GPIO_NUM_23
-#define ENCODER1_A_PIN GPIO_NUM_26
-#define ENCODER1_B_PIN GPIO_NUM_25
+#define MOTOR1_PWM_PIN GPIO_NUM_19
+#define MOTOR1_IN1_PIN GPIO_NUM_5
+#define MOTOR1_IN2_PIN GPIO_NUM_18
+#define ENCODER1_A_PIN GPIO_NUM_32
+#define ENCODER1_B_PIN GPIO_NUM_33
 
 // Motor 2 - Definición de pines para PWM, dirección y encoder
 #define MOTOR2_PWM_PIN GPIO_NUM_4
-#define MOTOR2_IN1_PIN GPIO_NUM_16
-#define MOTOR2_IN2_PIN GPIO_NUM_17
-#define ENCODER2_A_PIN GPIO_NUM_33
-#define ENCODER2_B_PIN GPIO_NUM_32
+#define MOTOR2_IN1_PIN GPIO_NUM_15
+#define MOTOR2_IN2_PIN GPIO_NUM_2
+#define ENCODER2_A_PIN GPIO_NUM_25
+#define ENCODER2_B_PIN GPIO_NUM_26
 
 // =================================================================
 // 2. CONFIGURACIÓN DE PARÁMETROS FÍSICOS Y DE CONTROL
@@ -73,6 +73,8 @@ float motor_get_current_angle(motor_id_t motor_id);
 
 // Mueve el motor un ángulo relativo en grados desde su posición actual
 void motor_move_relative(motor_id_t motor_id, float angle_change);
+
+void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c); 
 
 // Detiene el motor inmediatamente
 void motor_stop(motor_id_t motor_id);
