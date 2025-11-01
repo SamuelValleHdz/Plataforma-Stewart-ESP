@@ -23,8 +23,8 @@ static const char *TAG = "app_main";
 float PID_KP = 2.5f;
 float PID_KI = 0.1f;
 float PID_KD = 0.05f;
-int PID_MAX_OUTPUT = 175;
-int PID_MIN_OUTPUT = -175;
+int PID_MAX_OUTPUT = 64;
+int PID_MIN_OUTPUT = -64;
 
 // --- PROTOTIPOS DE FUNCIONES LOCALES ---
 void print_startup_banner(void);
@@ -106,10 +106,30 @@ void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c) {
     // una posición absoluta.
     
     ESP_LOGI("MOTOR_CONTROL", "Moviendo a -> A:%.1f, B:%.1f, C:%.1f", angle_a, angle_b, angle_c);
+    
+    // --- Para angle_a ---
+    if (angle_a < 0.0f) {
+        angle_a = 0.0f;
+    } else if (angle_a > 45.0f) {
+        angle_a = 45.0f;
+    }
 
-    motor_move_relative(MOTOR_0, angle_a);
-    motor_move_relative(MOTOR_1, angle_b);
-    motor_move_relative(MOTOR_2, angle_c);
+    // --- Para angle_b ---
+    if (angle_b < 0.0f) {
+        angle_b = 0.0f;
+    } else if (angle_b > 45.0f) {
+        angle_b = 45.0f;
+    }
+
+    // --- Para angle_c ---
+    if (angle_c < 0.0f) {
+        angle_c = 0.0f;
+    } else if (angle_c > 45.0f) {
+        angle_c = 45.0f;
+    }
+    motor_move_relative(MOTOR_0, angle_a/2);
+    motor_move_relative(MOTOR_1, -angle_b);
+    motor_move_relative(MOTOR_2, -angle_c);
 }
 
 /**
@@ -117,8 +137,8 @@ void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c) {
  */
 void demo(void)
 {
-    const float demo_angle = 30.0f;
-    const int total_cycles = 5;
+    const float demo_angle = -30.0f;
+    const int total_cycles = 3;
 
     // --- MEJORA: Encabezado claro para la secuencia ---
     printf("\n\n╔══════════════════════════════════╗\n");
@@ -130,28 +150,28 @@ void demo(void)
         printf("===== CICLO %d de %d =====\n", i + 1, total_cycles);
 
         printf("[DEMO] Moviendo M0 -> %.1f°\n", demo_angle);
-        motor_move_relative(MOTOR_0, demo_angle);
-        vTaskDelay(pdMS_TO_TICKS(800));
+        motor_move_relative(MOTOR_0, -demo_angle);
+        vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Moviendo M1 -> %.1f°\n", demo_angle);
         motor_move_relative(MOTOR_1, demo_angle);
-        vTaskDelay(pdMS_TO_TICKS(800));
+        vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Moviendo M2 -> %.1f°\n", demo_angle);
         motor_move_relative(MOTOR_2, demo_angle);
-        vTaskDelay(pdMS_TO_TICKS(800));
+        vTaskDelay(pdMS_TO_TICKS(500));
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Regresando a la posición inicial...\n");
-        motor_move_relative(MOTOR_2, -demo_angle);
-        vTaskDelay(pdMS_TO_TICKS(800));
+        motor_move_relative(MOTOR_2, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
 
-        motor_move_relative(MOTOR_1, -demo_angle);
-        vTaskDelay(pdMS_TO_TICKS(800));
+        motor_move_relative(MOTOR_1, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
 
-        motor_move_relative(MOTOR_0, -demo_angle);
-        vTaskDelay(pdMS_TO_TICKS(800));
+        motor_move_relative(MOTOR_0, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("===== CICLO %d FINALIZADO =====\n\n", i + 1);
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -180,7 +200,6 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
     printf("[1/5] Almacenamiento NVS inicializado.\n");
-
     // 2. Sistema de motores
     motor_control_init();
     printf("[2/5] Módulo de control de motores listo.\n");
