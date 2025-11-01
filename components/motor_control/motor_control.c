@@ -83,7 +83,6 @@ static void pid_reset(pid_controller_t *pid) {
     pid->last_time = esp_timer_get_time();
 }
 
-<<<<<<< HEAD
 
 /**
  * @brief Actualiza todos los parámetros del controlador PID.
@@ -118,8 +117,6 @@ void update_all_pid_parameters(float kp, float ki, float kd, int limit_percent)
     printf("           └─ Límite de salida: %d%% (MAX: %.0f)\n", limit_percent, max_output);
 }
 
-=======
->>>>>>> base/master
 // ISR que se ejecuta en cada flanco del encoder para contar pulsos y determinar dirección
 static void IRAM_ATTR encoder_isr_handler(void* arg) {
     motor_id_t motor_index = (motor_id_t)(intptr_t)arg;
@@ -185,22 +182,14 @@ static void position_control_task(void *arg) {
 float motor_get_current_angle(motor_id_t motor_id) {
     if (motor_id >= NUM_MOTORS) return 0.0f;
     // Factor 4 por decodificación en cuadratura (4 estados por pulso)
-<<<<<<< HEAD
     float revolutions = (float)motors[motor_id].encoder_count / (2.0f * ENCODER_CPR * GEARBOX_RATIO);
-=======
-    float revolutions = (float)motors[motor_id].encoder_count / (4.0f * ENCODER_CPR * GEARBOX_RATIO);
->>>>>>> base/master
     return revolutions * 360.0f; // Convertir revoluciones a grados
 }
 
 // Mueve el motor un ángulo relativo desde su posición actual
 void motor_move_relative(motor_id_t motor_id, float angle_change) {
     if (motor_id >= NUM_MOTORS) return;
-<<<<<<< HEAD
     motors[motor_id].target_angle = angle_change;
-=======
-    motors[motor_id].target_angle += angle_change;
->>>>>>> base/master
     motors[motor_id].position_control_active = true;
     pid_reset(&motors[motor_id].pid);
     printf("Motor %d - Nuevo objetivo: %.2f grados (relativo: %.2f)\n", motor_id, motors[motor_id].target_angle, angle_change);
