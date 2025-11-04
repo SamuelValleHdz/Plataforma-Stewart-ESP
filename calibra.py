@@ -7,7 +7,7 @@ def nada(x):
 
 # --- CARGAR LA IMAGEN ---
 # Asegúrate de que el nombre coincida con tu foto
-img = cv2.imread('canica2.jpg')
+img = cv2.imread('lap.png')
 
 # Si la imagen es muy grande para tu pantalla, puedes redimensionarla
 img = cv2.resize(img, (640, 480))

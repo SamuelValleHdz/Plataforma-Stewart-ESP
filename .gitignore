@@ -1,0 +1,12 @@
+# Ignorar cache de Python
+__pycache__/
+
+# Ignorar TODAS las imágenes (nuevas y futuras)
+*.png
+*.jpg
+*.jpeg
+
+# Ignorar archivos de prueba
+calibra_vision.py
+new.py
+stick_test_V2.py
