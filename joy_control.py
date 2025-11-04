@@ -19,7 +19,7 @@ from comunication import ComunicadorRobot
 #  ⚙️ SECCIÓN DE CONFIGURACIÓN ⚙️
 # =============================================================================
 # Dimensiones físicas del robot.
-D_VAL = 65.0; E_VAL = 35.0; F_VAL = 60.0; G_VAL = 120.0
+D_VAL = 50.0; E_VAL = 50.0; F_VAL = 40.0; G_VAL = 65.25
 # Parámetros de operación.
 ALTURA_Z_FIJA = 110.0
 MAX_INCLINACION = 0.6
