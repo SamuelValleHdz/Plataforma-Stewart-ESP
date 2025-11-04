@@ -13,7 +13,7 @@
         <h1>Control de Motores</h1>
 
         <div class="control-panel">
-            <button id="pid-toggle-btn" class="collapsible-trigger">AjusPtes PID ⚙️</button>
+            <button id="pid-toggle-btn" class="collapsible-trigger">Ajustes PID ⚙️</button>
             <div id="pid-settings-panel" class="pid-settings">
                 <div class="param-group">
                     <label for="pid-kp">KP:</label>
@@ -69,7 +69,7 @@
         // --- Llenar las listas desplegables al cargar la página ---
         window.onload = function () {
             const angleSelect = document.getElementById('angle-select');
-            for (let i = -180; i <= 180; i += 15) {
+            for (let i = 0; i <= 90; i += 5) {
                 angleSelect.innerHTML += `<option value="${i}">${i}</option>`;
             }
         };

@@ -8,10 +8,7 @@
 #include "lwip/sys.h"
 #include "esp_netif.h"
 
-// --- Configuración de la Red Wi-Fi ---
-#define EXAMPLE_ESP_WIFI_SSID      "Robot"
-#define EXAMPLE_ESP_WIFI_PASS      "MTR09A_2022"
-#define EXAMPLE_MAX_STA_CONN        3
+#include "wifi_ap.h"
 
 // Etiqueta para los mensajes de log
 static const char *TAG = "wifi_AP";
