@@ -153,7 +153,7 @@ static esp_err_t set_angles_handler(httpd_req_t *req) {
  * @return ESP_OK
  */
 static esp_err_t demo_handler(httpd_req_t *req) {
-    demo();
+    dance();
     httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
