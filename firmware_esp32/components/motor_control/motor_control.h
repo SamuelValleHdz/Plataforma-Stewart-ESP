@@ -117,4 +117,8 @@ void calibrate(int motor_n);
  */
 void demo(void);
 
+
+void dance(void);
+
+
 #endif // MOTOR_CONTROL_H
