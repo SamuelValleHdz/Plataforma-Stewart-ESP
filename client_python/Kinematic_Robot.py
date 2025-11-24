@@ -51,7 +51,7 @@ class Machine:
         # --- Ecuaciones de cinemática inversa ---
         nmag = math.sqrt(nx**2 + ny**2 + 1)
         if nmag == 0:
-            return 90.0 # Posición neutral para evitar división por cero.
+            return 50.0 # Posición neutral para evitar división por cero.
         
         nx /= nmag
         ny /= nmag
@@ -93,5 +93,8 @@ class Machine:
              # Si los cálculos fallan (ej. división por cero), devuelve un ángulo seguro.
              return 30.0
         
-        # Convierte el ángulo final de radianes a grados.
-        return math.degrees(angle)
+        # Convierte el ángulo final de radianes a grados
+        angle_degrees = math.degrees(angle)
+        
+        # Devuelve el valor más pequeño entre el ángulo calculado y 60
+        return min(angle_degrees, 60.0)
