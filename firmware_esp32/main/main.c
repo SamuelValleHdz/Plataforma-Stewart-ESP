@@ -22,8 +22,8 @@ static const char *TAG = "app_main";
 float PID_KP = 2.5f;
 float PID_KI = 0.1f;
 float PID_KD = 0.05f;
-int PID_MAX_OUTPUT = 64;  // Límite inicial (se puede cambiar desde la web)
-int PID_MIN_OUTPUT = -64; // Límite inicial
+int PID_MAX_OUTPUT = 115;  // Límite inicial (se puede cambiar desde la web)
+int PID_MIN_OUTPUT = -115; // Límite inicial
 
 // --- Prototipos de Funciones Locales ---
 void print_startup_banner(void);
@@ -129,9 +129,9 @@ void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c)
 
     // Aplicar los ángulos a los motores
     // (Nota: La cinemática puede requerir ángulos negativos)
-    motor_move_relative(MOTOR_0, -angle_a);
-    motor_move_relative(MOTOR_1, -angle_b);
-    motor_move_relative(MOTOR_2, -angle_c);
+    motor_move_relative(MOTOR_0, angle_a);
+    motor_move_relative(MOTOR_1, -angle_b/2);
+    motor_move_relative(MOTOR_2, angle_c);
 }
 
 /**
@@ -141,11 +141,11 @@ void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c)
 
 void dance(void)
 {
-    const float dance_angle = -30.0f; // Ángulo de movimiento
-    const int total_cycles = 3;       // Cuántas veces repite el baile
+    const float dance_angle = 45.0f; // Ángulo de movimiento
+    const int total_cycles = 5;       // Cuántas veces repite el baile
 
     printf("\n\n╔══════════════════════════════════╗\n");
-    printf("║      INICIANDO BAILE (Sam-Ver)   ║\n");
+    printf("║      INICIANDO BAILE             ║\n"); 
     printf("╚══════════════════════════════════╝\n\n");
 
     for (int i = 0; i < total_cycles; i++)
@@ -159,23 +159,32 @@ void dance(void)
 
         printf("\\_(o_O)-\\ Derecha...\n");
         motor_move_relative(MOTOR_0, 0); // Asumo que 0 regresa a home o quita el offset
-        motor_move_relative(MOTOR_1, dance_angle);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        motor_move_relative(MOTOR_2, dance_angle);
         vTaskDelay(pdMS_TO_TICKS(400));
         
-        motor_move_relative(MOTOR_1, 0);
-
+        motor_move_relative(MOTOR_2, 0);
+        vTaskDelay(pdMS_TO_TICKS(100));
         /* --- PASO 2: Salto (Ambos Juntos) --- */
         printf("╚(°-°)╝ ¡ARRIBA!\n");
         motor_move_relative(MOTOR_0, dance_angle);
-        motor_move_relative(MOTOR_1, dance_angle);
+        motor_move_relative(MOTOR_2, dance_angle);
         vTaskDelay(pdMS_TO_TICKS(310)); // Pausa dramática
 
         printf("╔(°-°)╗ ¡ABAJO!\n");
         motor_move_relative(MOTOR_0, 0);
-        motor_move_relative(MOTOR_1, 0);
+        motor_move_relative(MOTOR_2, 0);
         vTaskDelay(pdMS_TO_TICKS(310));
 
-        }
+        printf("╚(°-°)╝ ¡ARRIBA!\n");
+        motor_move_relative(MOTOR_0, dance_angle);
+        motor_move_relative(MOTOR_2, dance_angle);
+        vTaskDelay(pdMS_TO_TICKS(310)); // Pausa dramática
+
+        printf("╔(°-°)╗ ¡ABAJO!\n");
+        motor_move_relative(MOTOR_0, 0);
+        motor_move_relative(MOTOR_2, 0);
+        vTaskDelay(pdMS_TO_TICKS(310));
     }
 
     printf("\n╔══════════════════════════════════╗\n");
@@ -205,7 +214,7 @@ void demo(void)
         vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Moviendo M1 -> %.1f°\n", demo_angle);
-        motor_move_relative(MOTOR_1, demo_angle);
+        motor_move_relative(MOTOR_1, -demo_angle);
         vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Moviendo M2 -> %.1f°\n", demo_angle);
