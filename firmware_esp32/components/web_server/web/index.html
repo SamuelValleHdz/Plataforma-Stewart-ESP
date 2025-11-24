@@ -41,7 +41,7 @@
         <div class="control-panel">
             <h2>Comandos Generales</h2>
             <button onclick="runDemo()">Ejecutar Demo</button>
-        </div>
+            <button onclick="runDance()">Modo Baile</button> </div>
 
         <div class="control-panel">
             <h2>Calibraci&oacute;n Individual</h2>
@@ -80,9 +80,9 @@
 
         pidToggleButton.addEventListener('click', () => {
             if (pidSettingsPanel.style.maxHeight) {
-                pidSettingsPanel.style.maxHeight = null; // Cierra el menú
+                pidSettingsPanel.style.maxHeight = null; 
             } else {
-                pidSettingsPanel.style.maxHeight = pidSettingsPanel.scrollHeight + "px"; // Abre el menú
+                pidSettingsPanel.style.maxHeight = pidSettingsPanel.scrollHeight + "px"; 
             }
         });
 
@@ -100,6 +100,9 @@
 
         // --- Funciones específicas para cada botón ---
         function runDemo() { sendCommand('/demo', ''); }
+        
+        // NUEVA FUNCIÓN JS PARA EL BAILE
+        function runDance() { sendCommand('/dance', ''); }
 
         function moveMotor() {
             const motor = document.getElementById('motor-select').value;
@@ -109,24 +112,14 @@
         }
 
         function savePIDSettings() {
-            // Lee los valores de las ganancias (sin cambios)
             const kp = document.getElementById('pid-kp').value;
             const ki = document.getElementById('pid-ki').value;
             const kd = document.getElementById('pid-kd').value;
-
-            // ✅ Lee el valor del NUEVO slider
             const limitPercent = document.getElementById('pid-limit-percent').value;
-
-            // ✅ Construye el cuerpo de la petición con el parámetro 'limit_percent'
             const body = `kp=${kp}&ki=${ki}&kd=${kd}&limit_percent=${limitPercent}`;
-
-            // Muestra en la consola del navegador lo que se va a enviar (muy útil para depurar)
             console.log("Enviando al robot:", body);
-
-            // Esta función la tienes tú, es la que envía el comando al microcontrolador
             sendCommand('/set_pid', body);
         }
     </script>
 </body>
-
 </html>

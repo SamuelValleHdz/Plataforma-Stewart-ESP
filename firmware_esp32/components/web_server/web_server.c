@@ -153,8 +153,16 @@ static esp_err_t set_angles_handler(httpd_req_t *req) {
  * @return ESP_OK
  */
 static esp_err_t demo_handler(httpd_req_t *req) {
-    dance();
+    demo();
     httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+// En web_server.c
+static esp_err_t dance_handler(httpd_req_t *req) {
+    // Llamar a la función dance() que creaste en main.c / motor_control.c
+    dance(); 
+    httpd_resp_send(req, "Bailando!", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -212,6 +220,9 @@ httpd_handle_t start_webserver(void) {
     const httpd_uri_t calibrate_uri = { .uri = "/calibrate", .method = HTTP_POST, .handler = calibrate_handler };
     const httpd_uri_t demo_uri = { .uri = "/demo", .method = HTTP_POST, .handler = demo_handler };
     const httpd_uri_t move_relative_uri = { .uri = "/move_relative", .method = HTTP_POST, .handler = move_relative_handler };
+    // En web_server.c dentro de start_webserver()
+    const httpd_uri_t dance_uri = { .uri = "/dance", .method = HTTP_POST, .handler = dance_handler };
+    httpd_register_uri_handler(server, &dance_uri);
     httpd_register_uri_handler(server, &calibrate_uri);
     httpd_register_uri_handler(server, &demo_uri);
     httpd_register_uri_handler(server, &move_relative_uri);
