@@ -5,3 +5,11 @@ sdkconfig.old
 .vscode/
 .ccls-cache/
 .clangd/
+
+
+*.pyc
+__pycache__/
+
+client_python/*.png
+client_python/*.jpg
+client_python/*.jpeg
