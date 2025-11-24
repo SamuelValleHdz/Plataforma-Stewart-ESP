@@ -29,7 +29,7 @@ URL_CAMARA = 2  # 0 para la webcam por defecto
 #canica_alto = np.array([179, 255, 255])
 
 #Lapiz
-canica_bajo = np.array([0, 54, 255])
+canica_bajo = np.array([25, 35, 255])
 canica_alto = np.array([65, 255, 255])
 # Radio del círculo visual de la plataforma (solo visual)
 radio_plataforma_calibrado = 150
@@ -86,7 +86,7 @@ def control_loop_vision(cap: cv2.VideoCapture,
                 break
 
             # Invertir la cámara horizontalmente (modo espejo)
-            frame = cv2.flip(frame, 1)
+            frame = cv2.flip(frame, 0)
 
             # --- 1. Detección de la canica ---
             hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
