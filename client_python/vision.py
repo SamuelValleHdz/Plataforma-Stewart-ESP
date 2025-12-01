@@ -22,7 +22,7 @@ from comunication import ComunicadorRobot
 # =============================================================================
 
 # --- Configuración de Visión ---
-URL_CAMARA = 2  # 0 para la webcam por defecto
+URL_CAMARA = 2#'http://192.168.1.65:8080/video'  # 0 para la webcam por defecto
 # Rango de color HSV para detectar la canica (ej: azul)
 # Canica
 #canica_bajo = np.array([80, 46, 225]) 
@@ -38,7 +38,7 @@ PIXEL_DEADZONE = 10
 # Define cuántos píxeles de error se consideran el 100% de inclinación.
 # Un valor más PEQUEÑO hará al robot MÁS AGRESIVO.
 # Un valor más GRANDE lo hará MÁS SUAVE.
-MAX_PIXEL_ERROR_CONTROL = 200.0
+MAX_PIXEL_ERROR_CONTROL = 180.0
 
 # --- Configuración del Robot ---
 D_VAL = 50.0; E_VAL = 50.0; F_VAL = 40.0; G_VAL = 65.25
@@ -86,7 +86,7 @@ def control_loop_vision(cap: cv2.VideoCapture,
                 break
 
             # Invertir la cámara horizontalmente (modo espejo)
-            frame = cv2.flip(frame, 0)
+            frame = cv2.flip(frame, 1) #0
 
             # --- 1. Detección de la canica ---
             hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
