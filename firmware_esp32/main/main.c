@@ -129,9 +129,9 @@ void set_all_motors_to_angles(float angle_a, float angle_b, float angle_c)
 
     // Aplicar los ángulos a los motores
     // (Nota: La cinemática puede requerir ángulos negativos)
-    motor_move_relative(MOTOR_0, angle_a);
-    motor_move_relative(MOTOR_1, -angle_b/2);
-    motor_move_relative(MOTOR_2, angle_c);
+    motor_move_relative(MOTOR_0, -angle_c/2);
+    motor_move_relative(MOTOR_1, angle_a);
+    motor_move_relative(MOTOR_2, angle_b);
 }
 
 /**
@@ -154,11 +154,11 @@ void dance(void)
 
         /* --- PASO 1: Izquierda y Derecha (Alternado) --- */
         printf("/-(O_o)_/ Izquierda...\n"); 
-        motor_move_relative(MOTOR_0, dance_angle);
+        motor_move_relative(MOTOR_1, dance_angle);
         vTaskDelay(pdMS_TO_TICKS(400));
 
         printf("\\_(o_O)-\\ Derecha...\n");
-        motor_move_relative(MOTOR_0, 0); // Asumo que 0 regresa a home o quita el offset
+        motor_move_relative(MOTOR_1, 0); // Asumo que 0 regresa a home o quita el offset
         vTaskDelay(pdMS_TO_TICKS(100));
         motor_move_relative(MOTOR_2, dance_angle);
         vTaskDelay(pdMS_TO_TICKS(400));
@@ -167,22 +167,22 @@ void dance(void)
         vTaskDelay(pdMS_TO_TICKS(100));
         /* --- PASO 2: Salto (Ambos Juntos) --- */
         printf("╚(°-°)╝ ¡ARRIBA!\n");
-        motor_move_relative(MOTOR_0, dance_angle);
+        motor_move_relative(MOTOR_1, dance_angle);
         motor_move_relative(MOTOR_2, dance_angle);
         vTaskDelay(pdMS_TO_TICKS(310)); // Pausa dramática
 
         printf("╔(°-°)╗ ¡ABAJO!\n");
-        motor_move_relative(MOTOR_0, 0);
+        motor_move_relative(MOTOR_1, 0);
         motor_move_relative(MOTOR_2, 0);
         vTaskDelay(pdMS_TO_TICKS(310));
 
         printf("╚(°-°)╝ ¡ARRIBA!\n");
-        motor_move_relative(MOTOR_0, dance_angle);
+        motor_move_relative(MOTOR_1, dance_angle);
         motor_move_relative(MOTOR_2, dance_angle);
         vTaskDelay(pdMS_TO_TICKS(310)); // Pausa dramática
 
         printf("╔(°-°)╗ ¡ABAJO!\n");
-        motor_move_relative(MOTOR_0, 0);
+        motor_move_relative(MOTOR_1, 0);
         motor_move_relative(MOTOR_2, 0);
         vTaskDelay(pdMS_TO_TICKS(310));
     }
@@ -210,11 +210,11 @@ void demo(void)
         printf("===== CICLO %d de %d =====\n", i + 1, total_cycles);
 
         printf("[DEMO] Moviendo M0 -> %.1f°\n", demo_angle);
-        motor_move_relative(MOTOR_0, demo_angle);
+        motor_move_relative(MOTOR_0, -demo_angle/2);
         vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Moviendo M1 -> %.1f°\n", demo_angle);
-        motor_move_relative(MOTOR_1, -demo_angle);
+        motor_move_relative(MOTOR_1, demo_angle);
         vTaskDelay(pdMS_TO_TICKS(500));
 
         printf("[DEMO] Moviendo M2 -> %.1f°\n", demo_angle);
