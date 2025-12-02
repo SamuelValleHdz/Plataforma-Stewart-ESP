@@ -1,164 +1,136 @@
-# Proyecto Robot Balancín de 3 Ejes (ESP32 + Python)
+# 🤖 Proyecto Robot Balancín de 3 Ejes (Plataforma Stewart)
 
-Este repositorio contiene el proyecto completo para un robot balancín (similar a una plataforma Stewart) de 3 grados de libertad. Incluye tanto el firmware para el ESP32 como el software de control en Python para la PC.
+![ESP-IDF](https://img.shields.io/badge/Firmware-ESP--IDF-red)
+![Python](https://img.shields.io/badge/Client-Python_3.12-blue)
+![OpenCV](https://img.shields.io/badge/Vision-OpenCV-green)
+![Status](https://img.shields.io/badge/Status-Functional-brightgreen)
 
-El sistema funciona de la siguiente manera:
+Este repositorio contiene el sistema completo de control para un robot paralelo de 3 grados de libertad (3-DOF). El proyecto combina un firmware de alto rendimiento en **ESP32** (FreeRTOS) con un cliente de procesamiento de visión y cinemática en **Python**.
 
-1. **Firmware (ESP32):** Actúa como el "cuerpo". Se encarga del control de bajo nivel (PID, PWM, encoders) y crea una red WiFi.
-
-2. **Cliente (Python):** Actúa como el "cerebro". Se ejecuta en una PC, calcula la cinemática inversa y envía los ángulos objetivo al ESP32 a través de TCP.
 ---
-## Características Principales
 
-- **Firmware Modular:** Código de ESP32 separado en componentes para `motor_control`, `web_server`, `tcp_server` y `wifi_ap`.
-    
-- **Doble Interfaz de Control:**  
-    - **Servidor Web (HTTP):** Para configurar las ganancias PID, calibrar y probar los motores.
+## 📋 Tabla de Contenidos
+1. [Demos en Vivo](#-demos-en-vivo)
+2. [Arquitectura del Sistema](#-arquitectura-del-sistema)
+3. [Hardware y Conexiones](#-hardware-y-conexiones)
+4. [Instalación y Puesta en Marcha](#-instalación-y-puesta-en-marcha)
+5. [Modos de Operación](#-modos-de-operación)
+6. [Notas Técnicas](#-notas-técnicas-importantes)
 
-    - **Servidor de Control (TCP):** Para recibir _streaming_ de ángulos de alta frecuencia (puerto `1234`).
-    
-- **Cliente de PC Avanzado:** Software en Python con dos modos de control:
+---
 
-    - **Modo 1: Control por Joystick** (`joy_control.py`).
-   
-	- **Modo 2: Control por Visión Artificial** (`vision.py`) usando OpenCV.
+## 🎥 Demos en Vivo
 
-- **Código de Cliente Modular:** La lógica de cinemática (`Kinematic_Robot.py`) y comunicación (`comunication.py`) están separadas para ser reutilizadas.
-    
+### 1. Sistema de Visión Artificial
+El robot detecta la posición de la canica mediante una cámara web y ajusta la inclinación de la plataforma en tiempo real usando un controlador PID.
+<video src="assets/vision.mp4" controls="controls" muted="muted" style="max-width: 730px;">
+</video>
 
-## Estructura del Proyecto
+### 2. Modo "Dance" (Coreografía) 💃
+Demostración de sincronización. Al activar este modo, el navegador reproduce audio (incrustado en Base64) mientras el robot ejecuta una secuencia de movimientos pre-programada.
+<video src="assets/baile.mp4" controls="controls" muted="muted" style="max-width: 730px;">
+</video>
 
-Este repositorio (monorepo) está organizado con las dos partes principales del proyecto:
+### 3. Estabilidad General
+Prueba de respuesta física y corrección de perturbaciones.
+<video src="assets/robot.mp4" controls="controls" muted="muted" style="max-width: 730px;">
+</video>
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+El proyecto es un **Monorepo** dividido en dos grandes componentes:
 
 ```
-/
-├── firmware_esp32/     <-- Todo el proyecto de ESP-IDF
-│   ├── main/
+PROYECTO_FINAL/
+├── 📁 firmware_esp32/          <-- "El Cuerpo" (C / ESP-IDF)
+│   ├── main/main.c             # Lógica de control y bucle principal
 │   ├── components/
-│   ├── CMakeLists.txt
-│   └── sdkconfig
+│   │   ├── motor_control/      # Gestión de PWM, Encoders y PID
+│   │   ├── tcp_server/         # Socket TCP (Puerto 1234) para streaming
+│   │   ├── web_server/         # Servidor HTTP y WebSockets
+│   │   └── wifi_ap/            # Punto de Acceso WiFi
+│   └── partitions.csv          # Tabla de particiones personalizada (2MB App)
 │
-├── client_python/      <-- Todos los scripts de Python
-│   ├── joy_control.py      (Modo Joystick)
-│   ├── vision.py           (Modo Visión)
-│   ├── Kinematic_Robot.py  (El cerebro matemático)
-│   ├── comunication.py     (El "cable" de red)
-│   └── requirements.txt    (Dependencias)
-│
-├── .gitignore
-└── README.md             (¡Estás aquí!)
+└── 📁 client_python/           <-- "El Cerebro" (Python)
+    ├── vision.py               # Detección de objetos (OpenCV)
+    ├── joy_control.py          # Control manual vía Joystick
+    ├── Kinematic_Robot.py      # Matemáticas de la Plataforma Stewart
+    └── comunication.py         # Cliente TCP
 ```
 
----
+## 🛠️ Hardware y Conexiones
 
-## Hardware y Pinout
+  * **Microcontrolador:** ESP32 (DevKit V1)
+  * **Drivers:** TB6612FNG (Dual Motor Driver)
+  * **Actuadores:** 3x Motores DC con Encoder (JGA25-370)
+  * **Alimentación:** Batería 9V externa.
 
-- **Microcontrolador:** ESP32  
-- **Drivers:** Motor Dual TB6612FNG
-- **Motores:** 3x JGA25-370 Motores DC con Encoder
-- **Fuente de alimentación:** Batería 9v
+### Pinout (ESP32)
 
-### Pinout (Definido en `firmware_esp32/components/motor_control/motor_control.h`)
+| Motor | Pin PWM | Pin IN1 | Pin IN2 | Encoder A | Encoder B |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **M0** | GPIO 23 | GPIO 22 | GPIO 21 | GPIO 34 | GPIO 35 |
+| **M1** | GPIO 19 | GPIO 5 | GPIO 18 | GPIO 32 | GPIO 33 |
+| **M2** | GPIO 4 | GPIO 15 | GPIO 2 | GPIO 25 | GPIO 26 |
 
-|**Motor**|**Pin PWM**|**Pin IN1**|**Pin IN2**|**Encoder A**|**Encoder B**|
-|---|---|---|---|---|---|
-|**M0**|GPIO 23|GPIO 22|GPIO 21|GPIO 34|GPIO 35|
-|**M1**|GPIO 19|GPIO 5|GPIO 18|GPIO 32|GPIO 33|
-|**M2**|GPIO 4|GPIO 15|GPIO 2|GPIO 25|GPIO 26|
+> **⚠️ Nota de Hardware:** Debido a un cambio en la tapa superior, la matriz de movimiento se ha reasignado por software. M0 controla el eje C (invertido). **El control manual del Motor 0 está deshabilitado en la Web por seguridad.**
 
----
+-----
 
-## Guía de Puesta en Marcha
+## ⚙️ Instalación y Puesta en Marcha
 
-Sigue estos 3 pasos para hacer funcionar el sistema.
+### A. Firmware (ESP32)
 
-### Paso 1: Cargar el Firmware (ESP32)
+1.  **Configuración de Memoria:** Este proyecto requiere una partición grande para la aplicación.
 
-Primero, necesitas programar el ESP32.
+      * En `idf.py menuconfig` -\> `Serial Flasher Config`, establece **Flash Size** a **4 MB**.
+      * La tabla de particiones usa `partitions.csv` (Factory App: 2MB).
 
-1. Navega a la carpeta del firmware: `cd firmware_esp32`
+2.  **Compilar y Subir:**
 
-2. Asegúrate de tener instalado **ESP-IDF** (versión `v5.4.2`).
-
-3. Conecta tu ESP32.
-
-4. Ejecuta `idf.py build flash monitor`.
-
-
-Una vez que el ESP32 se reinicie, creará un punto de acceso WiFi:
-
-- **SSID:** `Robot`
-
-- **Contraseña:** `MTR09A_2022`
-
-- **IP del ESP32:** `192.168.10.1`
-
-### Paso 2: Configurar el Cliente (Python)
-
-Ahora, en tu PC, instala las dependencias de Python.
-
-1. Conéctate a la red WiFi `Robot` creada por el ESP32.
-
-2. Navega a la carpeta del cliente: `cd client_python`
-
-3. Instala las librerías necesarias (pygame, opencv y numpy):
-
-   ```
-   pip install -r requirements.txt
+    ```bash
+    cd firmware_esp32
+    idf.py build flash monitor
     ```
 
-### Paso 3: ¡Ejecutar el Control!
+3.  **WiFi:** Conéctate a la red `Robot` (Pass: `MTR09A_2022`).
 
-¡Ya estás listo! Tienes dos modos para controlar el robot.
+### B. Cliente (Python)
 
-#### Modo A: Control por Joystick
-
-1. Asegúrate de tener un Joystick conectado a tu PC.
-
-2. Ejecuta el script:
-	Bash
-	```
-    python joy_control.py
+1.  Instalar dependencias:
+    ```bash
+    cd client_python
+    pip install -r requirements.txt
     ```
 
+-----
 
-#### Modo B: Control por Visión
+## 🎮 Modos de Operación
 
-1. Asegúrate de tener una cámara web conectada.
+### 1\. Interfaz Web (http://192.168.10.1)
 
-2. Ejecuta el script:
-    Bash
-    ```python vision.py```
+  * **Ajuste PID:** Modifica Kp, Ki, Kd en tiempo real.
+  * **Modo Baile:** Inicia la secuencia coreográfica con música.
+  * **Calibración:** Resetea la posición cero de los motores.
 
-> Modo Offline: Ambos scripts se pueden ejecutar sin conectar al robot usando el flag --offline. Esto es útil para probar la cámara o el joystick.
-> 
-> python vision.py --offline
+### 2\. Control por Visión (Python)
 
----
-## Detalles de la Comunicación
+Ejecuta `python vision.py`. El sistema detectará una canica naranja y moverá la plataforma para mantenerla centrada.
 
-### Interfaz Web (Configuración)
+  * **Ajuste:** Modificar los valores HSV en `vision.py` si la iluminación cambia.
 
-Mientras estés conectado a la red `Robot`, abre un navegador en **[http://192.168.10.1](http://192.168.10.1)**.
+### 3\. Control Manual (Joystick)
 
-Desde aquí puedes:
+Ejecuta `python joy_control.py`. Usa un mando de Xbox/PlayStation conectado a la PC para inclinar la plataforma.
 
-- Ajustar las ganancias **PID** (Kp, Ki, Kd).
+-----
 
-- **Calibrar** motores individualmente.
+## 📝 Notas Técnicas Importantes
 
-- Ejecutar una secuencia de **Demo**.
+1.  **Audio en Web:** El audio del modo "Dance" no se almacena en el ESP32 como archivo de audio, sino que está incrustado en el HTML como una cadena **Base64**. Esto permite reproducirlo en el cliente (celular/PC) sin hardware de audio adicional en el robot.
+2.  **Gestión de Recursos:** El ESP32 apaga automáticamente el Servidor Web cuando detecta una conexión TCP entrante (Python) para priorizar el control en tiempo real y evitar latencia.
+3.  **Seguridad:** Se implementó un límite de seguridad (Clamp) de 60° en la cinemática inversa para evitar colisiones mecánicas.
 
-### Protocolo TCP (Control en Tiempo Real)
-
-Para el control de alta velocidad, los scripts de Python usan un socket TCP.
-
-- **Puerto:** `1234`
-
-- **Protocolo:** El cliente envía un _payload_ de **6 bytes** en cada paquete.
-
-- **Formato:** 3x `uint16_t` (Ángulo A, Ángulo B, Ángulo C) empaquetados en formato **Big-Endian** (Network Byte Order).
-
-- **Implementación:** La lógica de este protocolo está en `client_python/comunication.py` (función `enviar_angulos`) y en `firmware_esp32/components/tcp_server/tcp_server.c`.
-
----
+-----
